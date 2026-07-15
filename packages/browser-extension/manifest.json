@@ -1,0 +1,21 @@
+{
+  "manifest_version": 3,
+  "name": "AI Context Bridge",
+  "version": "0.1.0",
+  "description": "Insert your editor's project context into AI chat pages, fetched from the local bridge.",
+  "permissions": ["activeTab", "scripting"],
+  "host_permissions": [
+    "http://127.0.0.1:8765/*",
+    "https://claude.ai/*",
+    "https://chatgpt.com/*",
+    "https://chat.openai.com/*",
+    "https://gemini.google.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "AI Context Bridge"
+  },
+  "background": {
+    "service_worker": "background.js"
+  }
+}

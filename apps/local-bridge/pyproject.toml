@@ -1,0 +1,25 @@
+[project]
+name = "ai-context-bridge-local-bridge"
+version = "0.1.0"
+description = "Local-first FastAPI bridge between the AI Context Bridge VS Code extension and browser extension."
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi>=0.111",
+    "uvicorn[standard]>=0.30",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "httpx>=0.27",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["bridge*"]

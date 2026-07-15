@@ -1,0 +1,12 @@
+{
+  "name": "@ai-context-bridge/shared",
+  "version": "0.1.0",
+  "description": "Shared contract types, feature flags, and constants for AI Context Bridge.",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json"
+  }
+}

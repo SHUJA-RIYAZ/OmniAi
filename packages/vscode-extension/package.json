@@ -1,0 +1,73 @@
+{
+  "name": "ai-context-bridge-vscode",
+  "displayName": "AI Context Bridge",
+  "description": "Collect, compress, and transfer project context to any AI assistant. Local-first.",
+  "version": "0.1.0",
+  "publisher": "ai-context-bridge",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": ["AI", "Other"],
+  "activationEvents": [],
+  "main": "./dist/extension.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "package": "vsce package"
+  },
+  "contributes": {
+    "commands": [
+      {
+        "command": "aiContextBridge.sendContext",
+        "title": "AI Context Bridge: Send Context to Bridge"
+      },
+      {
+        "command": "aiContextBridge.previewContext",
+        "title": "AI Context Bridge: Preview Collected Context"
+      }
+    ],
+    "configuration": {
+      "title": "AI Context Bridge",
+      "properties": {
+        "aiContextBridge.bridgeUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:8765",
+          "description": "Base URL of the local bridge server."
+        },
+        "aiContextBridge.flags.collectActiveFile": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include the active file's content in collected context."
+        },
+        "aiContextBridge.flags.collectSelection": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include the current selection in collected context."
+        },
+        "aiContextBridge.flags.collectDiagnostics": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include workspace diagnostics (errors/warnings) in collected context."
+        },
+        "aiContextBridge.flags.collectTerminal": {
+          "type": "boolean",
+          "default": false,
+          "description": "Include recent terminal output in collected context (opt-in: terminal buffers may contain secrets)."
+        },
+        "aiContextBridge.flags.collectGitDiff": {
+          "type": "boolean",
+          "default": true,
+          "description": "Include the working-tree git diff in collected context."
+        }
+      }
+    }
+  },
+  "dependencies": {
+    "@ai-context-bridge/context-engine": "0.1.0",
+    "@ai-context-bridge/shared": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.90.0",
+    "@types/node": "^20.0.0"
+  }
+}

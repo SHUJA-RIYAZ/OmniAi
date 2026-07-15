@@ -1,0 +1,12 @@
+node_modules/
+dist/
+out/
+*.vsix
+.vscode-test/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+coverage/
+.env
+*.tsbuildinfo

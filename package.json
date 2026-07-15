@@ -1,0 +1,23 @@
+{
+  "name": "ai-context-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first AI orchestration platform: collect, compress, and transfer project context between your editor and AI assistants.",
+  "license": "MIT",
+  "workspaces": [
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -b",
+    "test": "vitest run",
+    "test:bridge": "cd apps/local-bridge && pytest"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.5.0",
+    "vitest": "^2.0.0"
+  }
+}
