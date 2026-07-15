@@ -1,6 +1,12 @@
 import { formatSnapshotAsMarkdown, selectorsForHost } from "./format.js";
 
+// When loaded as a plain web page (dev preview) instead of an extension popup,
+// chrome.* APIs are unavailable: fetch the bridge directly and show the
+// markdown instead of injecting it into a tab.
+const isExtension = typeof chrome !== "undefined" && Boolean(chrome.runtime?.id);
+
 const statusEl = document.getElementById("status");
+const previewEl = document.getElementById("preview");
 
 function setStatus(text, isError = false) {
   statusEl.textContent = text;
@@ -33,15 +39,27 @@ function insertTextIntoPage(text, selectors) {
   return false;
 }
 
-document.getElementById("insert").addEventListener("click", async () => {
-  setStatus("Fetching context from bridge…");
-
-  const response = await chrome.runtime.sendMessage({ type: "FETCH_LATEST_CONTEXT" });
-  if (!response?.ok) {
-    setStatus(response?.error ?? "Unknown error contacting bridge.", true);
-    return;
+async function fetchLatestSnapshot() {
+  if (isExtension) {
+    const response = await chrome.runtime.sendMessage({ type: "FETCH_LATEST_CONTEXT" });
+    if (!response?.ok) {
+      throw new Error(response?.error ?? "Unknown error contacting bridge.");
+    }
+    return response.snapshot;
   }
+  // Dev preview: talk to the bridge directly.
+  let res;
+  try {
+    res = await fetch("http://127.0.0.1:8765/api/v1/context/latest");
+  } catch (err) {
+    throw new Error(`Bridge unreachable (${err.message}). Is it running on port 8765?`);
+  }
+  const body = await res.json();
+  if (!res.ok || !body.ok) throw new Error(body.error || `HTTP ${res.status}`);
+  return body.data;
+}
 
+async function insertIntoActiveTab(markdown) {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (!tab?.id || !tab.url) {
     setStatus("No active tab.", true);
@@ -54,7 +72,6 @@ document.getElementById("insert").addEventListener("click", async () => {
     return;
   }
 
-  const markdown = formatSnapshotAsMarkdown(response.snapshot);
   const [result] = await chrome.scripting.executeScript({
     target: { tabId: tab.id },
     func: insertTextIntoPage,
@@ -66,4 +83,31 @@ document.getElementById("insert").addEventListener("click", async () => {
   } else {
     setStatus("Could not find the chat input on this page.", true);
   }
+}
+
+document.getElementById("insert").addEventListener("click", async () => {
+  setStatus("Fetching context from bridge…");
+  previewEl.hidden = true;
+
+  let snapshot;
+  try {
+    snapshot = await fetchLatestSnapshot();
+  } catch (err) {
+    setStatus(err.message, true);
+    return;
+  }
+
+  const markdown = formatSnapshotAsMarkdown(snapshot);
+
+  if (isExtension) {
+    await insertIntoActiveTab(markdown);
+  } else {
+    previewEl.textContent = markdown;
+    previewEl.hidden = false;
+    setStatus("Dev preview: showing formatted context (load as an extension to insert into a chat).");
+  }
 });
+
+if (!isExtension) {
+  setStatus("Dev preview mode — not running as an extension.");
+}
