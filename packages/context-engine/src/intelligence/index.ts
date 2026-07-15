@@ -8,6 +8,7 @@ export * from "./dependency/graphBuilder";
 export * from "./summarizer/workspaceSummarizer";
 export * from "./services/tokenEstimator";
 export * from "./services/relatedFiles";
+export * from "./services/languageIntelligence";
 export * from "./services/intelligenceBuilder";
 export * from "./testing/inMemoryFileSystem";
 export * from "./testing/fakes";
