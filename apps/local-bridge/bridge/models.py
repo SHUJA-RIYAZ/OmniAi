@@ -10,6 +10,8 @@ from typing import Generic, Literal, Optional, TypeVar
 
 from pydantic import BaseModel, Field
 
+from .analysis.models import IntelligenceContext
+
 T = TypeVar("T")
 
 
@@ -66,6 +68,7 @@ class ContextSnapshot(BaseModel):
     diagnostics: list[DiagnosticItem] = Field(default_factory=list)
     terminal: Optional[TerminalContext] = None
     gitDiff: Optional[GitDiffContext] = None
+    intelligence: Optional[IntelligenceContext] = None
 
 
 class BridgeResponse(BaseModel, Generic[T]):

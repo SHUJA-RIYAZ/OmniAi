@@ -12,6 +12,9 @@ const SETTING_KEYS: Partial<Record<FeatureFlagName, string>> = {
   "collect.diagnostics": "collectDiagnostics",
   "collect.terminal": "collectTerminal",
   "collect.gitDiff": "collectGitDiff",
+  "engine.astParsing": "astParsing",
+  "engine.dependencyGraph": "dependencyGraph",
+  "engine.tokenEstimation": "tokenEstimation",
 };
 
 /** Reads flags from workspace configuration; unexposed flags use library defaults. */

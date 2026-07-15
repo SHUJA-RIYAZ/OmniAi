@@ -9,7 +9,7 @@
     "vscode": "^1.90.0"
   },
   "categories": ["AI", "Other"],
-  "activationEvents": [],
+  "activationEvents": ["*"],
   "main": "./dist/extension.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
@@ -24,6 +24,10 @@
       {
         "command": "aiContextBridge.previewContext",
         "title": "AI Context Bridge: Preview Collected Context"
+      },
+      {
+        "command": "aiContextBridge.showStatus",
+        "title": "AI Context Bridge: Show Status Panel"
       }
     ],
     "configuration": {
@@ -58,6 +62,35 @@
           "type": "boolean",
           "default": true,
           "description": "Include the working-tree git diff in collected context."
+        },
+        "aiContextBridge.flags.astParsing": {
+          "type": "boolean",
+          "default": true,
+          "description": "Analyze the active file's structure (functions, classes, imports, current function) via the local bridge."
+        },
+        "aiContextBridge.flags.dependencyGraph": {
+          "type": "boolean",
+          "default": true,
+          "description": "Build the import dependency graph and discover related files (requires AST parsing)."
+        },
+        "aiContextBridge.flags.tokenEstimation": {
+          "type": "boolean",
+          "default": true,
+          "description": "Estimate the token footprint of collected context."
+        },
+        "aiContextBridge.intelligence.maxDepth": {
+          "type": "number",
+          "default": 2,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "Maximum depth when traversing the import dependency graph."
+        },
+        "aiContextBridge.intelligence.maxRelatedFiles": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum number of related files included in context (counting the current file)."
         }
       }
     }

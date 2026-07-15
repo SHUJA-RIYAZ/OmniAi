@@ -76,6 +76,11 @@ export interface ContextSnapshot {
   diagnostics: DiagnosticItem[];
   terminal?: TerminalContext;
   gitDiff?: GitDiffContext;
+  /**
+   * Structured code intelligence (Phase 2). Optional and additive:
+   * consumers that predate it keep working unchanged.
+   */
+  intelligence?: import("./intelligence").IntelligenceContext;
 }
 
 /** Response envelope used by every bridge endpoint. */

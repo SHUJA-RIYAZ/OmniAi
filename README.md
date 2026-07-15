@@ -2,9 +2,9 @@
 
 A **local-first AI orchestration platform**: collect your editor's working context (active file, selection, diagnostics, terminal output, git diff, workspace metadata), serve it from a local bridge, and insert it into any AI assistant's web chat with one click. No cloud, no accounts — your code never leaves your machine unless *you* paste it somewhere.
 
-## Status: MVP (milestone 1)
+## Status: Context intelligence (milestone 2)
 
-The pipeline works end-to-end: **VS Code → local FastAPI bridge → browser extension → AI chat page**. Advanced features (AST parsing, semantic search, compression, provider routing) are planned and gated behind feature flags — see [docs/roadmap.md](docs/roadmap.md).
+The pipeline works end-to-end: **VS Code → local FastAPI bridge → browser extension → AI chat page**. Snapshots now carry structured intelligence — current function, file structure, import dependency graph, related files, workspace summary, and token estimates — instead of only raw text (see [docs/intelligence.md](docs/intelligence.md)). Remaining advanced features (semantic search, compression, provider routing) are gated behind feature flags — see [docs/roadmap.md](docs/roadmap.md).
 
 ## Repository layout
 

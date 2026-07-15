@@ -13,6 +13,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
+from .analysis import PythonAnalyzer
+from .analysis.models import AnalyzeRequest, FileAnalysis
 from .models import BridgeResponse, ContextSnapshot
 from .store import InMemorySnapshotStore, SnapshotStore
 
@@ -55,6 +57,21 @@ def create_app(store: SnapshotStore | None = None) -> FastAPI:
                 ).model_dump(),
             )
         return BridgeResponse[ContextSnapshot](ok=True, data=snapshot)
+
+    analyzer = PythonAnalyzer()
+
+    @app.post(f"{API_PREFIX}/analyze/python")
+    def analyze_python(request: AnalyzeRequest):
+        try:
+            analysis = analyzer.analyze(request.source)
+        except SyntaxError as exc:
+            return JSONResponse(
+                status_code=422,
+                content=BridgeResponse[dict](
+                    ok=False, error=f"Python syntax error: {exc.msg} (line {exc.lineno})"
+                ).model_dump(),
+            )
+        return BridgeResponse[FileAnalysis](ok=True, data=analysis)
 
     @app.get(f"{API_PREFIX}/context/{{snapshot_id}}")
     def get_context(snapshot_id: str):
