@@ -1,0 +1,11 @@
+export * from "./types";
+export * from "./capabilities";
+export * from "./baseAdapter";
+export * from "./registry";
+export { ChatGptAdapter, chatgptDescriptor } from "./chatgptAdapter";
+export { ClaudeAdapter, claudeDescriptor } from "./claudeAdapter";
+export { GeminiAdapter, geminiDescriptor } from "./geminiAdapter";
+export { DeepSeekAdapter, deepseekDescriptor } from "./deepseekAdapter";
+export { KimiAdapter, kimiDescriptor } from "./kimiAdapter";
+export { PerplexityAdapter, perplexityDescriptor } from "./perplexityAdapter";
+export { ZaiAdapter, zaiDescriptor } from "./zaiAdapter";

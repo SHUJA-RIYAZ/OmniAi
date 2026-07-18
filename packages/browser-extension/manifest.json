@@ -1,15 +1,27 @@
 {
   "manifest_version": 3,
   "name": "AI Context Bridge",
-  "version": "0.1.0",
-  "description": "Insert your editor's project context into AI chat pages, fetched from the local bridge.",
-  "permissions": ["activeTab", "scripting"],
+  "version": "0.2.0",
+  "description": "Universal AI browser assistant: send VS Code context into ChatGPT, Claude, Gemini, DeepSeek, Kimi, Perplexity, and Z.ai.",
+  "permissions": ["activeTab", "scripting", "storage", "tabs"],
   "host_permissions": [
     "http://127.0.0.1:8765/*",
-    "https://claude.ai/*",
+    "http://localhost:8765/*",
     "https://chatgpt.com/*",
     "https://chat.openai.com/*",
-    "https://gemini.google.com/*"
+    "https://claude.ai/*",
+    "https://gemini.google.com/*",
+    "https://chat.deepseek.com/*",
+    "https://*.deepseek.com/*",
+    "https://kimi.moonshot.cn/*",
+    "https://www.kimi.com/*",
+    "https://kimi.com/*",
+    "https://kimi.ai/*",
+    "https://www.perplexity.ai/*",
+    "https://perplexity.ai/*",
+    "https://chat.z.ai/*",
+    "https://z.ai/*",
+    "https://www.z.ai/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -17,5 +29,28 @@
   },
   "background": {
     "service_worker": "background.js"
-  }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://chatgpt.com/*",
+        "https://chat.openai.com/*",
+        "https://claude.ai/*",
+        "https://gemini.google.com/*",
+        "https://chat.deepseek.com/*",
+        "https://*.deepseek.com/*",
+        "https://kimi.moonshot.cn/*",
+        "https://www.kimi.com/*",
+        "https://kimi.com/*",
+        "https://kimi.ai/*",
+        "https://www.perplexity.ai/*",
+        "https://perplexity.ai/*",
+        "https://chat.z.ai/*",
+        "https://z.ai/*",
+        "https://www.z.ai/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ]
 }

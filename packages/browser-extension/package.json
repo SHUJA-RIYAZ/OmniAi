@@ -1,0 +1,22 @@
+{
+  "name": "@ai-context-bridge/browser-extension",
+  "version": "0.2.0",
+  "description": "Universal AI browser assistant: inserts VS Code context into ChatGPT, Claude, Gemini, DeepSeek, Kimi, Perplexity, and Z.ai.",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --config ../../vitest.config.ts"
+  },
+  "dependencies": {
+    "@ai-context-bridge/provider-sdk": "0.1.0",
+    "@ai-context-bridge/shared": "0.1.0"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.287",
+    "esbuild": "^0.25.0",
+    "jsdom": "^25.0.0"
+  }
+}

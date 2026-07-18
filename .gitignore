@@ -1,13 +1,26 @@
+# Dependencies
 node_modules/
+
+# Build outputs
 dist/
 out/
+coverage/
 *.vsix
-.vscode-test/
+*.tsbuildinfo
+
+# Python artifacts
 __pycache__/
 *.pyc
 .venv/
 .pytest_cache/
-coverage/
-.env
-*.tsbuildinfo
 *.egg-info/
+
+# Local environment files
+.env
+.env.*
+
+# Editor and OS files
+.vscode-test/
+.idea/
+.DS_Store
+Thumbs.db

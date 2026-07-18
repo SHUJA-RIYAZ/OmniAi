@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AI Context Bridge</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <header class="header">
+      <h1>AI Context Bridge</h1>
+      <p class="tagline">Universal browser assistant</p>
+    </header>
+
+    <section class="status-grid" aria-label="Connection status">
+      <div class="row">
+        <span class="label">Bridge</span>
+        <span id="bridge-status" class="value muted">…</span>
+      </div>
+      <div class="row">
+        <span class="label">Provider</span>
+        <span id="provider-status" class="value muted">…</span>
+      </div>
+      <div class="row">
+        <span class="label">Project</span>
+        <span id="project-status" class="value muted">…</span>
+      </div>
+      <div class="row">
+        <span class="label">Connection</span>
+        <span id="connection-status" class="value muted">…</span>
+      </div>
+      <div class="row">
+        <span class="label">Current AI</span>
+        <span id="current-ai" class="value muted">…</span>
+      </div>
+    </section>
+
+    <section class="actions" aria-label="Actions">
+      <button id="btn-send" type="button" class="primary">Send Context</button>
+      <button id="btn-copy" type="button">Copy Context</button>
+      <div class="action-row">
+        <button id="btn-refresh" type="button" class="secondary">Refresh</button>
+        <button id="btn-settings" type="button" class="secondary">Settings</button>
+      </div>
+    </section>
+
+    <p id="message" class="message" role="status"></p>
+
+    <section id="settings-panel" class="settings" hidden>
+      <h2>Settings</h2>
+      <label class="field">
+        <span>Bridge URL</span>
+        <input id="setting-bridge-url" type="url" autocomplete="off" />
+      </label>
+      <label class="field check">
+        <input id="setting-auto-detect" type="checkbox" />
+        <span>Auto detect provider</span>
+      </label>
+      <label class="field">
+        <span>Preferred provider</span>
+        <select id="setting-preferred">
+          <option value="">—</option>
+          <option value="chatgpt">ChatGPT</option>
+          <option value="claude">Claude</option>
+          <option value="gemini">Gemini</option>
+          <option value="deepseek">DeepSeek</option>
+          <option value="kimi">Kimi</option>
+          <option value="perplexity">Perplexity</option>
+          <option value="zai">Z.ai</option>
+        </select>
+      </label>
+      <label class="field check">
+        <input id="setting-auto-send" type="checkbox" />
+        <span>Auto send after insert</span>
+      </label>
+      <label class="field check">
+        <input id="setting-debug" type="checkbox" />
+        <span>Debug mode</span>
+      </label>
+      <button id="btn-save-settings" type="button" class="primary">Save settings</button>
+    </section>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
