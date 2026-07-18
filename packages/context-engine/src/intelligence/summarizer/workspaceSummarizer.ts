@@ -28,6 +28,13 @@ const PYTHON_BACKEND: Detection[] = [
   { needle: "flask", label: "Flask" },
 ];
 
+const JAVA_BACKEND: Detection[] = [
+  { needle: "spring-boot", label: "Spring Boot" },
+  { needle: "springframework", label: "Spring" },
+];
+
+const PHP_BACKEND: Detection[] = [{ needle: "laravel/framework", label: "Laravel" }];
+
 const DATABASE: Detection[] = [
   { needle: '"prisma"', label: "Prisma" },
   { needle: '"mongoose"', label: "Mongoose" },
@@ -49,6 +56,11 @@ const PACKAGE_MANAGER_FILES: Array<[string, string]> = [
   ["poetry.lock", "poetry"],
   ["uv.lock", "uv"],
   ["requirements.txt", "pip"],
+  ["pom.xml", "maven"],
+  ["build.gradle", "gradle"],
+  ["composer.json", "composer"],
+  ["go.mod", "go modules"],
+  ["Cargo.toml", "cargo"],
 ];
 
 /**
@@ -60,20 +72,26 @@ export class ManifestWorkspaceSummarizer implements IWorkspaceSummarizer {
   constructor(private readonly fs: IFileSystem) {}
 
   async summarize(languages: string[]): Promise<WorkspaceSummary> {
-    const packageJson = (await this.fs.readFile("package.json")) ?? "";
-    const pythonDeps = [
-      (await this.fs.readFile("pyproject.toml")) ?? "",
-      (await this.fs.readFile("requirements.txt")) ?? "",
-    ]
+    const read = async (file: string) => (await this.fs.readFile(file)) ?? "";
+    const packageJson = await read("package.json");
+    const pythonDeps = [await read("pyproject.toml"), await read("requirements.txt")]
       .join("\n")
       .toLowerCase();
+    const pomXml = (await read("pom.xml")) + (await read("build.gradle"));
+    const composerJson = await read("composer.json");
 
     const frameworks: DetectedFrameworks = {};
 
     const frontend = detect(FRONTEND, packageJson);
     if (frontend) frameworks.frontend = frontend;
 
-    const backend = detect(PYTHON_BACKEND, pythonDeps) ?? detect(NODE_BACKEND, packageJson);
+    const backend =
+      detect(PYTHON_BACKEND, pythonDeps) ??
+      detect(NODE_BACKEND, packageJson) ??
+      detect(JAVA_BACKEND, pomXml) ??
+      detect(PHP_BACKEND, composerJson) ??
+      // .csproj names vary; appsettings.json is the stable ASP.NET marker.
+      ((await this.fs.exists("appsettings.json")) ? "ASP.NET" : undefined);
     if (backend) frameworks.backend = backend;
 
     const database = detect(DATABASE, packageJson) ?? detect(DATABASE, pythonDeps);
@@ -90,7 +108,7 @@ export class ManifestWorkspaceSummarizer implements IWorkspaceSummarizer {
     }
 
     return {
-      projectType: projectType(frameworks, packageJson, pythonDeps),
+      projectType: projectType(frameworks, [packageJson, pythonDeps, pomXml, composerJson]),
       frameworks,
       languages,
     };
@@ -103,12 +121,11 @@ function detect(detections: Detection[], haystack: string): string | undefined {
 
 function projectType(
   frameworks: DetectedFrameworks,
-  packageJson: string,
-  pythonDeps: string,
+  manifestTexts: string[],
 ): WorkspaceSummary["projectType"] {
   if (frameworks.backend && frameworks.frontend) return "fullstack";
   if (frameworks.backend) return "backend";
   if (frameworks.frontend) return "frontend";
-  if (packageJson.trim() || pythonDeps.trim()) return "library";
+  if (manifestTexts.some((text) => text.trim().length > 0)) return "library";
   return "unknown";
 }

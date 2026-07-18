@@ -1,4 +1,9 @@
-import type { FileAnalysis, FunctionInfo } from "@ai-context-bridge/shared";
+import type {
+  ClassInfo,
+  CursorContext,
+  FileAnalysis,
+  FunctionInfo,
+} from "@ai-context-bridge/shared";
 
 /**
  * Pure symbol lookup over a {@link FileAnalysis}. Language-independent:
@@ -27,4 +32,41 @@ export function findEnclosingFunction(
     }
   }
   return best;
+}
+
+/** The innermost class containing the (1-based) cursor line, if any. */
+export function findEnclosingClass(
+  analysis: FileAnalysis,
+  cursorLine: number,
+): ClassInfo | undefined {
+  let best: ClassInfo | undefined;
+  for (const cls of analysis.classes) {
+    if (cursorLine < cls.startLine || cursorLine > cls.endLine) continue;
+    if (!best || cls.endLine - cls.startLine < best.endLine - best.startLine) {
+      best = cls;
+    }
+  }
+  return best;
+}
+
+/**
+ * Structural cursor description: enclosing function/class and the scope
+ * kind (function > class > module, innermost wins).
+ */
+export function buildCursorContext(
+  analysis: FileAnalysis,
+  cursorLine: number,
+  cursorColumn: number,
+  selectionLength: number,
+): CursorContext {
+  const fn = findEnclosingFunction(analysis, cursorLine);
+  const cls = findEnclosingClass(analysis, cursorLine);
+  return {
+    line: cursorLine,
+    column: cursorColumn,
+    ...(fn ? { symbol: fn.name } : {}),
+    ...(cls ? { className: cls.name } : {}),
+    scope: fn ? "function" : cls ? "class" : "module",
+    selectionLength,
+  };
 }

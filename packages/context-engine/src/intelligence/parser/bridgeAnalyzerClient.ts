@@ -21,14 +21,14 @@ export class BridgeAnalyzerClient implements ILanguageAnalyzer {
     return BridgeAnalyzerClient.SUPPORTED.has(languageId);
   }
 
-  async analyze(source: string, languageId: string): Promise<FileAnalysis> {
+  async analyze(source: string, languageId: string, path?: string): Promise<FileAnalysis> {
     if (!this.supports(languageId)) {
       throw new Error(`No analyzer available for language: ${languageId}`);
     }
     const res = await this.fetchFn(`${this.baseUrl}/api/v1/analyze/${languageId}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ source, language: languageId }),
+      body: JSON.stringify({ source, language: languageId, ...(path ? { path } : {}) }),
       signal: AbortSignal.timeout(10_000),
     });
     const body = (await res.json()) as BridgeResponse<FileAnalysis>;

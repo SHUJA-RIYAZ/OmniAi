@@ -48,6 +48,10 @@ export interface IntelligenceInput {
   source: string;
   /** 1-based cursor line, if a cursor is available. */
   cursorLine?: number;
+  /** 1-based cursor column. */
+  cursorColumn?: number;
+  /** Length of the active selection in characters (0 = no selection). */
+  selectionLength?: number;
   /** Detected workspace languages (from workspace metadata). */
   workspaceLanguages: string[];
   /** Text whose token footprint should be estimated (usually the serialized snapshot). */

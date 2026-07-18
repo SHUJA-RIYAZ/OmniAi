@@ -89,8 +89,11 @@ def test_function_signature(analysis):
 
 def test_function_calls_raises_nested(analysis):
     fn = next(f for f in analysis.functions if f.name == "create_user")
-    assert "validate" in fn.calls
-    assert "repo.create" in fn.calls
+    by_qualified = {c.qualifiedName: c for c in fn.calls}
+    assert "validate" in by_qualified
+    assert "repo.create" in by_qualified
+    assert by_qualified["repo.create"].name == "create"
+    assert by_qualified["repo.create"].line > 0
     assert fn.raises == ["ValueError"]
     assert fn.nestedFunctions == ["audit"]
 
@@ -118,6 +121,104 @@ def test_property_and_visibility(analysis):
 
     base = next(c for c in analysis.classes if c.name == "_Base")
     assert base.visibility == "protected"
+
+
+CALLS_SAMPLE = '''
+import numpy as np
+from database import get_db
+from .jwt import create_token
+
+
+def helper():
+    pass
+
+
+class Service:
+    def run(self):
+        self.helper_method()
+        return helper()
+
+    def helper_method(self):
+        pass
+
+
+def main():
+    helper()
+    print("hi")
+    np.linalg.solve(a, b)
+    get_db()
+    create_token()
+    mystery()
+'''
+
+
+@pytest.fixture(scope="module")
+def calls():
+    analysis = PythonAnalyzer().analyze(CALLS_SAMPLE, path="app/main.py")
+    fn = next(f for f in analysis.functions if f.name == "main")
+    return {c.name: c for c in fn.calls}
+
+
+def test_call_classification_local(calls):
+    assert calls["helper"].type == "local"
+    assert calls["helper"].resolved is True
+    assert calls["helper"].qualifiedName == "helper"
+
+
+def test_call_classification_builtin(calls):
+    assert calls["print"].type == "builtin"
+    assert calls["print"].qualifiedName == "builtins.print"
+    assert calls["print"].resolved is True
+
+
+def test_call_classification_module_alias(calls):
+    solve = calls["solve"]
+    assert solve.module == "numpy"
+    assert solve.qualifiedName == "numpy.linalg.solve"
+    assert solve.type == "unknown"  # workspace vs third-party settled by the engine
+
+
+def test_call_classification_from_import(calls):
+    assert calls["get_db"].qualifiedName == "database.get_db"
+    assert calls["get_db"].module == "database"
+
+
+def test_call_classification_relative_import_is_workspace(calls):
+    assert calls["create_token"].type == "workspace"
+    assert calls["create_token"].module == "jwt"
+
+
+def test_call_classification_unknown(calls):
+    assert calls["mystery"].type == "unknown"
+    assert calls["mystery"].resolved is False
+
+
+def test_self_calls_are_local():
+    analysis = PythonAnalyzer().analyze(CALLS_SAMPLE, path="app/main.py")
+    service = next(c for c in analysis.classes if c.name == "Service")
+    run = next(m for m in service.methods if m.name == "run")
+    self_call = next(c for c in run.calls if c.name == "helper_method")
+    assert self_call.type == "local"
+    assert self_call.resolved is True
+
+
+def test_symbol_ids_are_stable_and_path_based():
+    analysis = PythonAnalyzer().analyze(CALLS_SAMPLE, path="app/main.py")
+    fn = next(f for f in analysis.functions if f.name == "main")
+    assert fn.id == "python://app/main.py/main"
+
+    service = next(c for c in analysis.classes if c.name == "Service")
+    assert service.id == "python://app/main.py/Service"
+    run = next(m for m in service.methods if m.name == "run")
+    assert run.id == "python://app/main.py/Service.run"
+
+    again = PythonAnalyzer().analyze(CALLS_SAMPLE, path="app/main.py")
+    assert next(f for f in again.functions if f.name == "main").id == fn.id
+
+
+def test_ids_without_path_use_placeholder():
+    analysis = PythonAnalyzer().analyze("def f():\n    pass\n")
+    assert analysis.functions[0].id == "python://<unsaved>/f"
 
 
 def test_syntax_error_raises():

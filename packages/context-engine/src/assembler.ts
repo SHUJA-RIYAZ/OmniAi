@@ -1,7 +1,8 @@
-import type {
-  ContextSnapshot,
-  FeatureFlagReader,
-  WorkspaceMetadata,
+import {
+  CURRENT_SCHEMA_VERSION,
+  type ContextSnapshot,
+  type FeatureFlagReader,
+  type WorkspaceMetadata,
 } from "@ai-context-bridge/shared";
 import type { CollectorResult, ContextCollector } from "./collector";
 
@@ -39,7 +40,7 @@ export class ContextAssembler {
     const snapshot: ContextSnapshot = {
       id: this.ids.next(),
       createdAt: this.now().toISOString(),
-      schemaVersion: 1,
+      schemaVersion: CURRENT_SCHEMA_VERSION,
       workspace,
       diagnostics: [],
     };

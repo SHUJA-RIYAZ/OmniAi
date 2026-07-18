@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { RelatedFileDiscovery } from "./relatedFiles";
 import { PythonModuleResolver } from "../dependency/pythonModuleResolver";
-import { FakeAnalyzer, makeAnalysis, makeFunction } from "../testing/fakes";
+import { FakeAnalyzer, makeAnalysis, makeCall, makeFunction } from "../testing/fakes";
 import { InMemoryFileSystem } from "../testing/inMemoryFileSystem";
 
 function imp(module: string) {
@@ -23,7 +23,7 @@ const currentFunction = makeFunction({
   name: "create_user",
   startLine: 1,
   endLine: 10,
-  calls: ["UserRepository.create", "validate"],
+  calls: [makeCall("UserRepository.create"), makeCall("validate")],
 });
 
 function makeDiscovery() {
@@ -48,9 +48,23 @@ describe("RelatedFileDiscovery", () => {
       5,
     );
 
-    expect(related[0]).toEqual({ filePath: "main.py", reason: "current" });
-    expect(related[1]).toEqual({ filePath: "repo.py", reason: "calls" });
+    expect(related[0]).toMatchObject({
+      filePath: "main.py",
+      reason: "current",
+      priority: 100,
+      depth: 0,
+    });
+    expect(related[1]).toMatchObject({
+      filePath: "repo.py",
+      reason: "calls",
+      priority: 95,
+      depth: 1,
+      symbols: ["create"],
+    });
     expect(related.slice(2).map((r) => r.reason)).toEqual(["imported", "imported"]);
+    // Priorities strictly decrease within each tier.
+    const priorities = related.map((r) => r.priority ?? 0);
+    expect([...priorities].sort((a, b) => b - a)).toEqual(priorities);
   });
 
   it("respects the maximum", async () => {

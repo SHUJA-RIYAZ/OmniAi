@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { findEnclosingFunction } from "./symbolLocator";
+import { buildCursorContext, findEnclosingClass, findEnclosingFunction } from "./symbolLocator";
 import { makeAnalysis, makeFunction } from "../testing/fakes";
 
 const analysis = makeAnalysis({
@@ -47,5 +47,39 @@ describe("findEnclosingFunction", () => {
   it("includes boundary lines", () => {
     expect(findEnclosingFunction(analysis, 1)?.name).toBe("outer");
     expect(findEnclosingFunction(analysis, 20)?.name).toBe("outer");
+  });
+});
+
+describe("buildCursorContext", () => {
+  it("reports function scope with enclosing class", () => {
+    expect(buildCursorContext(analysis, 37, 8, 12)).toEqual({
+      line: 37,
+      column: 8,
+      symbol: "create",
+      className: "Repo",
+      scope: "function",
+      selectionLength: 12,
+    });
+  });
+
+  it("reports class scope between methods", () => {
+    const ctx = buildCursorContext(analysis, 32, 1, 0);
+    expect(ctx.scope).toBe("class");
+    expect(ctx.className).toBe("Repo");
+    expect(ctx.symbol).toBeUndefined();
+  });
+
+  it("reports module scope outside everything", () => {
+    expect(buildCursorContext(analysis, 25, 1, 0)).toEqual({
+      line: 25,
+      column: 1,
+      scope: "module",
+      selectionLength: 0,
+    });
+  });
+
+  it("findEnclosingClass picks the innermost class", () => {
+    expect(findEnclosingClass(analysis, 40)?.name).toBe("Repo");
+    expect(findEnclosingClass(analysis, 5)).toBeUndefined();
   });
 });

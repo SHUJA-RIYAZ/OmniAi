@@ -84,6 +84,6 @@ describe("LanguageIntelligence", () => {
     const { intelligence } = make();
     const graph = await intelligence.buildDependencyGraph("main.py", "python", 2);
     expect(graph.files.sort()).toEqual(["main.py", "repo.py"]);
-    expect(graph.edges).toEqual([{ from: "main.py", to: "repo.py" }]);
+    expect(graph.edges).toEqual([{ from: "main.py", to: "repo.py", type: "import" }]);
   });
 });

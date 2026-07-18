@@ -35,7 +35,7 @@
       "properties": {
         "aiContextBridge.bridgeUrl": {
           "type": "string",
-          "default": "http://127.0.0.1:8765",
+          "default": "http://127.0.0.1:8080",
           "description": "Base URL of the local bridge server."
         },
         "aiContextBridge.flags.collectActiveFile": {

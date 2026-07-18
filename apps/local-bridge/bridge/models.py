@@ -61,7 +61,8 @@ class GitDiffContext(BaseModel):
 class ContextSnapshot(BaseModel):
     id: str
     createdAt: str
-    schemaVersion: Literal[1]
+    # v1 accepted for backwards compatibility; see packages/shared/src/migration.ts
+    schemaVersion: Literal[1, 2]
     workspace: WorkspaceMetadata
     activeFile: Optional[ActiveFileContext] = None
     selection: Optional[SelectionContext] = None

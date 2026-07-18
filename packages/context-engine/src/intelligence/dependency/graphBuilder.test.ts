@@ -33,8 +33,8 @@ describe("DependencyGraphBuilder", () => {
   it("walks imports transitively up to maxDepth", async () => {
     const graph = await makeBuilder().build("a.py", "python", 3);
     expect(graph.files.sort()).toEqual(["a.py", "b.py", "c.py", "d.py"]);
-    expect(graph.edges).toContainEqual({ from: "a.py", to: "b.py" });
-    expect(graph.edges).toContainEqual({ from: "c.py", to: "d.py" });
+    expect(graph.edges).toContainEqual({ from: "a.py", to: "b.py", type: "import" });
+    expect(graph.edges).toContainEqual({ from: "c.py", to: "d.py", type: "import" });
     expect(graph.truncated).toBe(false);
   });
 
@@ -42,6 +42,20 @@ describe("DependencyGraphBuilder", () => {
     const graph = await makeBuilder().build("a.py", "python", 1);
     expect(graph.files.sort()).toEqual(["a.py", "b.py"]);
     expect(graph.truncated).toBe(true);
+  });
+
+  it("emits typed nodes for visualization", async () => {
+    const graph = await makeBuilder().build("a.py", "python", 3);
+    expect(graph.nodes).toContainEqual({ id: "a.py", filePath: "a.py", kind: "file" });
+    expect(graph.nodes).toHaveLength(graph.files.length);
+  });
+
+  it("flags cyclic graphs without looping", async () => {
+    const graph = await makeBuilder().build("a.py", "python", 5);
+    expect(graph.hasCycles).toBe(true); // a → b → a
+
+    const acyclic = await makeBuilder().build("c.py", "python", 5);
+    expect(acyclic.hasCycles).toBe(false); // c → d only
   });
 
   it("handles cycles without looping", async () => {

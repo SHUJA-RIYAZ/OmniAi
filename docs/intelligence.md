@@ -1,5 +1,7 @@
 # Context Intelligence (Phase 2)
 
+> Phase 2.5 hardening added: rich call graphs, symbol ids, cursor context, typed graph edges/nodes, prioritized related files, incremental parsing with caching, per-phase metrics, warnings, and schema v2 with migrations. See [ContextSchema.md](ContextSchema.md), [DependencyGraph.md](DependencyGraph.md), [Performance.md](Performance.md), and [ExtensionGuide.md](ExtensionGuide.md).
+
 Phase 2 turns raw file dumps into structured project understanding. A snapshot now optionally carries an `intelligence` object:
 
 ```jsonc

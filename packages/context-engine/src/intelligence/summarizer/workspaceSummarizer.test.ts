@@ -42,6 +42,39 @@ describe("ManifestWorkspaceSummarizer", () => {
     expect(summary.frameworks.buildTool).toBe("Vite");
   });
 
+  it("detects Spring Boot via pom.xml", async () => {
+    const fs = new InMemoryFileSystem({
+      "pom.xml": "<dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>",
+    });
+    const summary = await new ManifestWorkspaceSummarizer(fs).summarize(["java"]);
+    expect(summary.frameworks.backend).toBe("Spring Boot");
+    expect(summary.frameworks.packageManager).toBe("maven");
+    expect(summary.projectType).toBe("backend");
+  });
+
+  it("detects Laravel via composer.json", async () => {
+    const fs = new InMemoryFileSystem({
+      "composer.json": '{"require": {"laravel/framework": "^11.0"}}',
+    });
+    const summary = await new ManifestWorkspaceSummarizer(fs).summarize(["php"]);
+    expect(summary.frameworks.backend).toBe("Laravel");
+    expect(summary.frameworks.packageManager).toBe("composer");
+  });
+
+  it("detects ASP.NET via appsettings.json", async () => {
+    const fs = new InMemoryFileSystem({ "appsettings.json": "{}" });
+    const summary = await new ManifestWorkspaceSummarizer(fs).summarize(["csharp"]);
+    expect(summary.frameworks.backend).toBe("ASP.NET");
+  });
+
+  it("detects NestJS before Express", async () => {
+    const fs = new InMemoryFileSystem({
+      "package.json": '{"dependencies": {"@nestjs/core": "10", "express": "4"}}',
+    });
+    const summary = await new ManifestWorkspaceSummarizer(fs).summarize(["typescript"]);
+    expect(summary.frameworks.backend).toBe("NestJS");
+  });
+
   it("degrades to unknown for empty workspaces", async () => {
     const summary = await new ManifestWorkspaceSummarizer(new InMemoryFileSystem()).summarize([]);
     expect(summary.projectType).toBe("unknown");

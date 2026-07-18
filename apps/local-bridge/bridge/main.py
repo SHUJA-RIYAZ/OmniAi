@@ -63,7 +63,7 @@ def create_app(store: SnapshotStore | None = None) -> FastAPI:
     @app.post(f"{API_PREFIX}/analyze/python")
     def analyze_python(request: AnalyzeRequest):
         try:
-            analysis = analyzer.analyze(request.source)
+            analysis = analyzer.analyze(request.source, path=request.path)
         except SyntaxError as exc:
             return JSONResponse(
                 status_code=422,

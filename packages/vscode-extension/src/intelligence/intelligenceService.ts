@@ -1,7 +1,9 @@
 import * as vscode from "vscode";
 import {
   BridgeAnalyzerClient,
+  CachedAnalyzer,
   HeuristicTokenEstimator,
+  InMemoryAnalysisCache,
   IntelligenceContextBuilder,
   ManifestWorkspaceSummarizer,
   PythonModuleResolver,
@@ -16,6 +18,13 @@ import { VsCodeFileSystem } from "./vsCodeFileSystem";
  * `@ai-context-bridge/context-engine`.
  */
 export class IntelligenceService {
+  /**
+   * Analysis cache shared across invocations (incremental parsing):
+   * content-hash keyed, so edits invalidate automatically and unchanged
+   * files are never re-sent to the bridge.
+   */
+  private readonly analysisCache = new InMemoryAnalysisCache();
+
   constructor(
     private readonly flags: FeatureFlagReader,
     private readonly bridgeUrl: () => string,
@@ -34,7 +43,10 @@ export class IntelligenceService {
     const config = vscode.workspace.getConfiguration("aiContextBridge.intelligence");
     const builder = new IntelligenceContextBuilder(
       {
-        analyzer: new BridgeAnalyzerClient(this.bridgeUrl()),
+        analyzer: new CachedAnalyzer(
+          new BridgeAnalyzerClient(this.bridgeUrl()),
+          this.analysisCache,
+        ),
         resolver: new PythonModuleResolver(fs),
         fs,
         summarizer: new ManifestWorkspaceSummarizer(fs),
@@ -52,6 +64,8 @@ export class IntelligenceService {
       languageId: editor.document.languageId,
       source: editor.document.getText(),
       cursorLine: editor.selection.active.line + 1,
+      cursorColumn: editor.selection.active.character + 1,
+      selectionLength: editor.document.getText(editor.selection).length,
       workspaceLanguages: snapshot.workspace.languages,
       estimateTarget: JSON.stringify(snapshot),
     });

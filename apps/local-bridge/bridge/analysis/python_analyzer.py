@@ -9,10 +9,13 @@ their own analyzer class exposed through the same endpoint family.
 from __future__ import annotations
 
 import ast
+import builtins
+from dataclasses import dataclass, field
 from typing import Optional, Union
 
 from .models import (
     ArgumentInfo,
+    CallInfo,
     ClassInfo,
     FileAnalysis,
     FunctionInfo,
@@ -24,6 +27,22 @@ from .models import (
 
 FunctionNode = Union[ast.FunctionDef, ast.AsyncFunctionDef]
 _FUNCTION_TYPES = (ast.FunctionDef, ast.AsyncFunctionDef)
+
+_BUILTIN_NAMES = frozenset(dir(builtins))
+
+
+@dataclass
+class _ModuleContext:
+    """Single-file facts used to classify call targets and mint symbol ids."""
+
+    path: str
+    #: names defined at module level (functions, classes) or as methods
+    local_defs: frozenset[str] = frozenset()
+    #: bound name -> (module, is_relative), e.g. {"np": ("numpy", False)}
+    import_map: dict[str, tuple[str, bool]] = field(default_factory=dict)
+
+    def symbol_id(self, qualified_name: str) -> str:
+        return f"python://{self.path}/{qualified_name}"
 
 
 def _visibility(name: str) -> Visibility:
@@ -61,20 +80,93 @@ class PythonAnalyzer:
 
     language = "python"
 
-    def analyze(self, source: str) -> FileAnalysis:
+    def analyze(self, source: str, path: Optional[str] = None) -> FileAnalysis:
         tree = ast.parse(source)
         imports = [imp for node in ast.walk(tree) for imp in self._imports(node)]
+        ctx = self._module_context(tree, imports, path)
         functions = [
-            self._function(node)
+            self._function(node, ctx)
             for node in tree.body
             if isinstance(node, _FUNCTION_TYPES)
         ]
         classes = [
-            self._class(node) for node in tree.body if isinstance(node, ast.ClassDef)
+            self._class(node, ctx) for node in tree.body if isinstance(node, ast.ClassDef)
         ]
         return FileAnalysis(
             language=self.language, imports=imports, functions=functions, classes=classes
         )
+
+    def _module_context(
+        self, tree: ast.Module, imports: list[ImportInfo], path: Optional[str]
+    ) -> _ModuleContext:
+        local_defs: set[str] = set()
+        for node in tree.body:
+            if isinstance(node, _FUNCTION_TYPES):
+                local_defs.add(node.name)
+            elif isinstance(node, ast.ClassDef):
+                local_defs.add(node.name)
+                for child in node.body:
+                    if isinstance(child, _FUNCTION_TYPES):
+                        local_defs.add(child.name)
+
+        import_map: dict[str, tuple[str, bool]] = {}
+        for imp in imports:
+            if imp.names:  # from module import a as b, ...
+                for name in imp.names:
+                    import_map[name.alias or name.name] = (imp.module, imp.isRelative)
+            else:  # import module [as alias]
+                bound = imp.alias or imp.module.split(".", 1)[0]
+                import_map[bound] = (imp.module, imp.isRelative)
+
+        return _ModuleContext(
+            path=path or "<unsaved>",
+            local_defs=frozenset(local_defs),
+            import_map=import_map,
+        )
+
+    def _classify_call(self, dotted: str, line: int, ctx: _ModuleContext) -> CallInfo:
+        first, _, _rest = dotted.partition(".")
+        name = dotted.rsplit(".", 1)[-1]
+
+        if first in ("self", "cls"):
+            return CallInfo(
+                name=name,
+                qualifiedName=dotted,
+                line=line,
+                resolved=name in ctx.local_defs,
+                type="local",
+            )
+        if first in ctx.import_map:
+            module, is_relative = ctx.import_map[first]
+            # `from m import f` binds f directly (dotted == first);
+            # `import m as x` binds the module (dotted == "x.attr...").
+            qualified = (
+                f"{module}.{dotted}" if dotted == first else module + dotted[len(first):]
+            )
+            return CallInfo(
+                name=name,
+                qualifiedName=qualified,
+                module=module,
+                line=line,
+                # Workspace vs third-party needs filesystem knowledge the
+                # analyzer lacks; the engine's CallResolver settles it.
+                resolved=False,
+                type="workspace" if is_relative else "unknown",
+            )
+        if "." not in dotted and dotted in ctx.local_defs:
+            return CallInfo(
+                name=dotted, qualifiedName=dotted, line=line, resolved=True, type="local"
+            )
+        if "." not in dotted and dotted in _BUILTIN_NAMES:
+            return CallInfo(
+                name=dotted,
+                qualifiedName=f"builtins.{dotted}",
+                module="builtins",
+                line=line,
+                resolved=True,
+                type="builtin",
+            )
+        return CallInfo(name=name, qualifiedName=dotted, line=line, resolved=False, type="unknown")
 
     def _imports(self, node: ast.AST) -> list[ImportInfo]:
         if isinstance(node, ast.Import):
@@ -104,16 +196,20 @@ class PythonAnalyzer:
             ]
         return []
 
-    def _function(self, node: FunctionNode, class_name: Optional[str] = None) -> FunctionInfo:
-        calls: list[str] = []
+    def _function(
+        self, node: FunctionNode, ctx: _ModuleContext, class_name: Optional[str] = None
+    ) -> FunctionInfo:
+        calls: list[CallInfo] = []
+        seen_calls: set[str] = set()
         raises: list[str] = []
         for child in ast.walk(node):
             if child is node:
                 continue
             if isinstance(child, ast.Call):
-                name = _dotted_name(child.func)
-                if name:
-                    calls.append(name)
+                dotted = _dotted_name(child.func)
+                if dotted and dotted not in seen_calls:
+                    seen_calls.add(dotted)
+                    calls.append(self._classify_call(dotted, child.lineno, ctx))
             elif isinstance(child, ast.Raise) and child.exc is not None:
                 exc = child.exc
                 target = exc.func if isinstance(exc, ast.Call) else exc
@@ -122,17 +218,19 @@ class PythonAnalyzer:
                     raises.append(name)
 
         nested = [c.name for c in node.body if isinstance(c, _FUNCTION_TYPES)]
+        qualified = f"{class_name}.{node.name}" if class_name else node.name
 
         return FunctionInfo(
+            id=ctx.symbol_id(qualified),
             name=node.name,
-            qualifiedName=f"{class_name}.{node.name}" if class_name else node.name,
+            qualifiedName=qualified,
             args=self._arguments(node.args),
             returnType=_unparse(node.returns),
             decorators=[ast.unparse(d) for d in node.decorator_list],
             docstring=ast.get_docstring(node),
             startLine=node.lineno,
             endLine=node.end_lineno or node.lineno,
-            calls=_dedupe(calls),
+            calls=calls,
             raises=_dedupe(raises),
             nestedFunctions=nested,
             isMethod=class_name is not None,
@@ -170,9 +268,12 @@ class PythonAnalyzer:
             )
         return result
 
-    def _class(self, node: ast.ClassDef) -> ClassInfo:
+    def _class(self, node: ast.ClassDef, ctx: _ModuleContext) -> ClassInfo:
         methods: list[FunctionInfo] = []
         properties: list[PropertyInfo] = []
+
+        def prop_id(name: str) -> str:
+            return ctx.symbol_id(f"{node.name}.{name}")
 
         for child in node.body:
             if isinstance(child, _FUNCTION_TYPES):
@@ -180,6 +281,7 @@ class PythonAnalyzer:
                 if "property" in decorators:
                     properties.append(
                         PropertyInfo(
+                            id=prop_id(child.name),
                             name=child.name,
                             type=_unparse(child.returns),
                             visibility=_visibility(child.name),
@@ -187,10 +289,11 @@ class PythonAnalyzer:
                         )
                     )
                 else:
-                    methods.append(self._function(child, class_name=node.name))
+                    methods.append(self._function(child, ctx, class_name=node.name))
             elif isinstance(child, ast.AnnAssign) and isinstance(child.target, ast.Name):
                 properties.append(
                     PropertyInfo(
+                        id=prop_id(child.target.id),
                         name=child.target.id,
                         type=_unparse(child.annotation),
                         visibility=_visibility(child.target.id),
@@ -202,6 +305,7 @@ class PythonAnalyzer:
                     if isinstance(target, ast.Name):
                         properties.append(
                             PropertyInfo(
+                                id=prop_id(target.id),
                                 name=target.id,
                                 visibility=_visibility(target.id),
                                 line=child.lineno,
@@ -209,6 +313,7 @@ class PythonAnalyzer:
                         )
 
         return ClassInfo(
+            id=ctx.symbol_id(node.name),
             name=node.name,
             baseClasses=[ast.unparse(b) for b in node.bases],
             decorators=[ast.unparse(d) for d in node.decorator_list],

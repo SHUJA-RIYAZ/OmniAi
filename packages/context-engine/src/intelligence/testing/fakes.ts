@@ -1,5 +1,18 @@
-import type { FileAnalysis, FunctionInfo } from "@ai-context-bridge/shared";
+import type { CallInfo, FileAnalysis, FunctionInfo } from "@ai-context-bridge/shared";
 import type { ILanguageAnalyzer } from "../interfaces";
+
+/** Builds a CallInfo from a dotted name, defaulting to an unresolved unknown call. */
+export function makeCall(qualifiedName: string, partial: Partial<CallInfo> = {}): CallInfo {
+  const segments = qualifiedName.split(".");
+  return {
+    name: segments[segments.length - 1] as string,
+    qualifiedName,
+    line: 1,
+    resolved: false,
+    type: "unknown",
+    ...partial,
+  };
+}
 
 /** Builds a FileAnalysis with sensible empty defaults. */
 export function makeAnalysis(partial: Partial<FileAnalysis> = {}): FileAnalysis {

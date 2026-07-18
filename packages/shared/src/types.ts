@@ -68,8 +68,13 @@ export interface ContextSnapshot {
   id: string;
   /** ISO-8601 timestamp. */
   createdAt: string;
-  /** Schema version for forward compatibility. */
-  schemaVersion: 1;
+  /**
+   * Schema version. v2 (Phase 2.5) upgraded `calls` from strings to
+   * {@link import("./intelligence").CallInfo} objects and added symbol ids,
+   * cursor context, warnings, and metrics. Use `migrateSnapshot` to read
+   * snapshots of any version.
+   */
+  schemaVersion: 1 | 2;
   workspace: WorkspaceMetadata;
   activeFile?: ActiveFileContext;
   selection?: SelectionContext;

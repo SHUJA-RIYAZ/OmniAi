@@ -61,4 +61,27 @@ describe("PythonModuleResolver", () => {
   it("resolves third-party imports to nothing", async () => {
     expect(await resolver.resolve(imp({ module: "fastapi" }), "app/main.py")).toEqual([]);
   });
+
+  it("resolves modules inside namespace packages (no __init__.py)", async () => {
+    const nsFs = new InMemoryFileSystem({
+      "main.py": "",
+      "ns/pkg/mod.py": "", // ns/ and ns/pkg/ have no __init__.py
+    });
+    const nsResolver = new PythonModuleResolver(nsFs);
+
+    expect(await nsResolver.resolve(imp({ module: "ns.pkg.mod" }), "main.py")).toEqual([
+      "ns/pkg/mod.py",
+    ]);
+    expect(
+      await nsResolver.resolve(imp({ module: "ns.pkg", names: [{ name: "mod" }] }), "main.py"),
+    ).toEqual(["ns/pkg/mod.py"]);
+  });
+
+  it("returns nothing for missing relative targets instead of failing", async () => {
+    const result = await resolver.resolve(
+      imp({ module: "nonexistent", isRelative: true, level: 1 }),
+      "app/main.py",
+    );
+    expect(result).toEqual([]);
+  });
 });
