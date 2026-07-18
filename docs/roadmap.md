@@ -21,10 +21,15 @@ See [intelligence.md](intelligence.md) and ADR-0005.
 
 Deferred from the original milestone-2 list: the bridge auth token handshake (still open).
 
-## Milestone 3 — Understanding
+## ✅ Milestone 3 — Context selection (Phase 3, current)
+
+See [ContextSelection.md](ContextSelection.md).
+
+- `engine.compression` — deterministic scoring, ranking, token budgeting, code + structural compression, five selection strategies, prompt builder, Context Inspector panel
+
+## Milestone 4 — Understanding
 
 - Bridge auth token handshake (close the local-process gap)
-- `engine.compression` — token-budgeted context selection
 - `engine.semanticSearch` + `engine.embeddings` — local embedding index
 - Additional language analyzers (TypeScript/JavaScript) behind `ILanguageAnalyzer`
 

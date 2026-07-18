@@ -28,6 +28,10 @@
       {
         "command": "aiContextBridge.showStatus",
         "title": "AI Context Bridge: Show Status Panel"
+      },
+      {
+        "command": "aiContextBridge.openContextInspector",
+        "title": "AI Context Bridge: Open Context Inspector"
       }
     ],
     "configuration": {
@@ -91,6 +95,46 @@
           "minimum": 1,
           "maximum": 20,
           "description": "Maximum number of related files included in context (counting the current file)."
+        },
+        "aiContextBridge.flags.contextSelection": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable smart context selection and compression (Context Inspector)."
+        },
+        "aiContextBridge.selection.maxTokens": {
+          "type": "number",
+          "default": 8000,
+          "enum": [4000, 8000, 16000, 32000],
+          "description": "Token budget for the selected context."
+        },
+        "aiContextBridge.selection.strategy": {
+          "type": "string",
+          "default": "hybrid",
+          "enum": ["hybrid", "current-file", "dependency", "diagnostics", "git"],
+          "description": "How files are ranked for inclusion: hybrid blends all signals; the others emphasize one signal."
+        },
+        "aiContextBridge.selection.compressionLevel": {
+          "type": "string",
+          "default": "light",
+          "enum": ["none", "light", "aggressive"],
+          "description": "none: full sources. light: whitespace cleanup. aggressive: also strips comments, prunes unused imports, collapses long literals and collections."
+        },
+        "aiContextBridge.selection.removeComments": {
+          "type": "boolean",
+          "default": true,
+          "description": "Remove comments at the aggressive compression level."
+        },
+        "aiContextBridge.selection.compressWhitespace": {
+          "type": "boolean",
+          "default": true,
+          "description": "Trim trailing whitespace and collapse blank-line runs."
+        },
+        "aiContextBridge.selection.maxFiles": {
+          "type": "number",
+          "default": 12,
+          "minimum": 1,
+          "maximum": 50,
+          "description": "Maximum number of files considered for the token budget."
         }
       }
     }

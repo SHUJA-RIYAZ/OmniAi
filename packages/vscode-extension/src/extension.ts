@@ -11,6 +11,9 @@ import { TerminalCollector } from "./collectors/terminalCollector";
 import { IntelligenceService } from "./intelligence/intelligenceService";
 import { StatusPanel } from "./status/statusPanel";
 import { buildStatusReport } from "./status/statusReport";
+import { ContextInspectorPanel } from "./inspector/contextInspectorPanel";
+import type { InspectorData } from "./inspector/inspectorView";
+import { readSelectionOptions, SelectionServiceFactory } from "./selection/selectionWiring";
 
 function bridgeUrl(): string {
   return vscode.workspace
@@ -96,7 +99,42 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("aiContextBridge.showStatus", () => {
       statusPanel.show();
     }),
+
+    vscode.commands.registerCommand("aiContextBridge.openContextInspector", async () => {
+      if (!flags.isEnabled("engine.compression")) {
+        void vscode.window.showInformationMessage(
+          "AI Context Bridge: enable the aiContextBridge.flags.contextSelection setting to use the Context Inspector.",
+        );
+        return;
+      }
+      try {
+        await inspector.show(await buildInspectorData());
+      } catch (err) {
+        void vscode.window.showErrorMessage(
+          `AI Context Bridge: could not build context — ${err instanceof Error ? err.message : err}`,
+        );
+      }
+    }),
   );
+
+  const selectionFactory = new SelectionServiceFactory(bridgeUrl);
+
+  async function buildInspectorData(): Promise<InspectorData> {
+    const service = selectionFactory.create();
+    if (!service) throw new Error("Open a workspace folder first.");
+
+    const { snapshot } = await collect();
+    const { selection, prompt } = await service.select({ snapshot }, readSelectionOptions());
+    const collectionTimeMs = snapshot.intelligence?.collectionTimeMs;
+    return {
+      selection,
+      prompt,
+      ...(collectionTimeMs !== undefined ? { collectionTimeMs } : {}),
+    };
+  }
+
+  const inspector = new ContextInspectorPanel({ refresh: buildInspectorData });
+  context.subscriptions.push(inspector);
 }
 
 export function deactivate(): void {

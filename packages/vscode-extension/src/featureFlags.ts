@@ -15,6 +15,7 @@ const SETTING_KEYS: Partial<Record<FeatureFlagName, string>> = {
   "engine.astParsing": "astParsing",
   "engine.dependencyGraph": "dependencyGraph",
   "engine.tokenEstimation": "tokenEstimation",
+  "engine.compression": "contextSelection",
 };
 
 /** Reads flags from workspace configuration; unexposed flags use library defaults. */
