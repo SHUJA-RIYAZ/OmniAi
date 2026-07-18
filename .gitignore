@@ -8,7 +8,7 @@ coverage/
 *.vsix
 *.tsbuildinfo
 
-# Python artifacts
+# Python artifactss
 __pycache__/
 *.pyc
 .venv/
